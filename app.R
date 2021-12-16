@@ -11,6 +11,7 @@ library(shiny)
 library(ActivePathways)
 library(visNetwork)
 
+# to-do: visEvent function
 source(file = "./enrichmentMap/enrichmentMap.R")
 options(shiny.maxRequestSize = 30*1024^2)
 # Define UI for application that draws a histogram
