@@ -20,37 +20,46 @@ ui <- fluidPage(
     # Application title
     titlePanel("Shiny ActivePathways"),
 
-    # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            fileInput(inputId = "scoresFile", label = "Score file",
+            fileInput(inputId = "scoresFile", 
+                      label = "Score file",
                       accept = c(
                           ".tsv"
                       )
             ),
-            fileInput(inputId = "gmtFile", label = "GMT file",
+            fileInput(inputId = "gmtFile", 
+                      label = "GMT file",
                       accept = c(
                           ".gmt"
                       )
             ),
-            actionButton(inputId = "Calculate", label = "Run ActivePathways!"),
-            downloadLink('downloadNetwork', 'Download network as .html')
+            actionButton(inputId = "Calculate", 
+                         label = "Run ActivePathways!"),
+            downloadLink('downloadNetwork', 'Download network as .html'),
+            checkboxInput("showVertexLabel",
+                          label = "show vertex label",
+                          value = TRUE),
+            actionButton("showVertexLabelButton",
+                          label = "show vertex label")
         ),
         
 
-        # Show a plot of the generated distribution
+        # Show a plot
         mainPanel(
             mainPanel(
                 visNetworkOutput(outputId = "visNet", 
                                  width = "130%", 
-                                 height = "700px")
+                                 height = "400px"),
+                verbatimTextOutput('geneList')
                 
+               
             )
         )
     )
 )
 
-# Define server logic required to draw a histogram
+# Define server logic
 server <- function(input, output) {
 
     scores <- reactive({
@@ -64,6 +73,38 @@ server <- function(input, output) {
         return(read.GMT(input$gmtFile$datapath))
     })
     enrichmentResult <- reactiveValues(data = NULL)
+    enrichNetwork <- reactiveValues(data = NULL)
+    output$visNet <- renderVisNetwork({
+        if (! is.null(enrichNetwork$data)) {
+            if (input$showVertexLabel)
+                enrichNetwork$data$x$nodes$label <- enrichNetwork$data$x$nodes$id
+            else {
+                enrichNetwork$data$x$nodes$label <- NULL
+            }
+            enrichNetwork$data %>%
+                visInteraction(navigationButtons = TRUE) %>%
+                visOptions(nodesIdSelection = TRUE) %>%
+                visEvents(select = "function(nodes) {
+            Shiny.onInputChange('current_node_id', nodes.nodes);
+            ;}")
+        }
+    })
+    selectedPathwayId <- reactiveValues(data = NULL)
+    observeEvent(input$current_node_id, {
+        print(paste("The selected node ID is:", input$current_node_id))
+        gmtData <- getDataFromGMT(gmt())
+        selectedPathwayId$data <- gmtData$ids[gmtData$pathwayNames == input$current_node_id]
+        print(paste("The pathway ID is:", selectedPathwayId$data))
+    })
+    output$geneList <- renderPrint(
+        gmt()[[selectedPathwayId$data]])
+        # print(gmt()[[selectedPathwayId$data]]$genes))
+    
+    observeEvent(input$showVertexLabelButton, {
+        visNetworkProxy("visNet") %>%
+            visNodes(label = NULL)
+    })
+    
     observeEvent(input$Calculate,{
         enrichmentResult$data <- ActivePathways(scores(), gmt())
         
@@ -73,10 +114,10 @@ server <- function(input, output) {
                                similarityCutoff = 0.25, 
                                pvalueCutoff = NULL, 
                                k = 0.5)
-        visg <- visNetwork::visIgraph(g)
-        output$visNet <- renderVisNetwork({
-            visg
-        })
+        visigraph <- visNetwork::visIgraph(g)
+        nodes <- visigraph$x$nodes
+        edges <- visigraph$x$edges
+        enrichNetwork$data <- visNetwork(nodes, edges) %>% visIgraphLayout()
         output$downloadNetwork <- downloadHandler(
             filename = function() {
                 paste('network-', Sys.Date(), '.html', sep='')
