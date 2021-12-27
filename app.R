@@ -39,9 +39,7 @@ ui <- fluidPage(
             downloadLink('downloadNetwork', 'Download network as .html'),
             checkboxInput("showVertexLabel",
                           label = "show vertex label",
-                          value = TRUE),
-            actionButton("showVertexLabelButton",
-                          label = "show vertex label")
+                          value = TRUE)
         ),
         
 
@@ -51,6 +49,7 @@ ui <- fluidPage(
                 visNetworkOutput(outputId = "visNet", 
                                  width = "130%", 
                                  height = "400px"),
+                hr(),
                 verbatimTextOutput('geneList')
                 
                
@@ -76,11 +75,6 @@ server <- function(input, output) {
     enrichNetwork <- reactiveValues(data = NULL)
     output$visNet <- renderVisNetwork({
         if (! is.null(enrichNetwork$data)) {
-            if (input$showVertexLabel)
-                enrichNetwork$data$x$nodes$label <- enrichNetwork$data$x$nodes$id
-            else {
-                enrichNetwork$data$x$nodes$label <- NULL
-            }
             enrichNetwork$data %>%
                 visInteraction(navigationButtons = TRUE) %>%
                 visOptions(nodesIdSelection = TRUE) %>%
@@ -96,14 +90,18 @@ server <- function(input, output) {
         selectedPathwayId$data <- gmtData$ids[gmtData$pathwayNames == input$current_node_id]
         print(paste("The pathway ID is:", selectedPathwayId$data))
     })
-    output$geneList <- renderPrint(
-        gmt()[[selectedPathwayId$data]])
-        # print(gmt()[[selectedPathwayId$data]]$genes))
+    output$geneList <- renderPrint({
+        if (! is.null(selectedPathwayId$data)) {
+            gmt()[[selectedPathwayId$data]]
+        }})
+    # if (! input$showVertexLabel) {
+    #     visNetworkProxy("visNet") %>%
+    #         visNodes(font = list(size = 0))
+    # } else {
+    #     visNetworkProxy("visNet") %>%
+    #         visNodes(font = list(size = 14))
+    # }
     
-    observeEvent(input$showVertexLabelButton, {
-        visNetworkProxy("visNet") %>%
-            visNodes(label = NULL)
-    })
     
     observeEvent(input$Calculate,{
         enrichmentResult$data <- ActivePathways(scores(), gmt())
