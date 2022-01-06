@@ -57,7 +57,7 @@ computeSCMatrix <- function(algorithm, gmt, ids, k) {
                                                                       union(genes1, genes2), 
                                                                       genes1, 
                                                                       genes2, 
-                                                                      k = 0.5)
+                                                                      k = k)
     }
   }
   return(simiScoreMatrix)
