@@ -67,7 +67,7 @@ ui <- fluidPage(
             mainPanel(
                 visNetworkOutput(outputId = "visNet", 
                                  width = "130%", 
-                                 height = "400px"),
+                                 height = "700px"),
                 hr(),
                 verbatimTextOutput('geneList')
                 
@@ -95,6 +95,10 @@ server <- function(input, output, session) {
                                                                   "none"), 
                         selected = "holm",
                         label = "correction method"), 
+            sliderInput(inputId = "filterRange", 
+                        "Geneset Filter:",
+                        min = 0, max = 1000,
+                        value = c(5, 1000)),
             type = "input"
         ))
     })
@@ -170,7 +174,8 @@ server <- function(input, output, session) {
                                                 cutoff = as.numeric(input$cutoff), 
                                                 significant = as.numeric(input$significant), 
                                                 merge.method = input$mergeMethod, 
-                                                correction.method = input$correctionMethod)
+                                                correction.method = input$correctionMethod,
+                                                geneset.filter = input$filterRange)
         
         g <- plotEnrichmentMap(gmt(), 
                                enrichmentResult$data,
