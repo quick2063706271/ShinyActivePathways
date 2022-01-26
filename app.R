@@ -55,8 +55,7 @@ ui <- fluidPage(
             shinyWidgets::sliderTextInput(
                 inputId = "size",
                 label = "Font Size: ", 
-                choices = c(0, 7, 14, 21, 28),
-                grid = TRUE,
+                seq(from = 0, to = 28),
                 selected = 14
             )
         ),
@@ -105,15 +104,16 @@ server <- function(input, output, session) {
     
     scores <- reactive({
         print(input$scoresFile)
-        data <- NULL
+        preTable <- NULL
         if (file_ext(input$scoresFile$datapath) == "tsv") {
-            data <- as.matrix(
-                read.table(file = input$scoresFile$datapath, header = TRUE, sep = '\t', row.names = 'Gene'))
+            preTable <- read.table(file = input$scoresFile$datapath, header = TRUE, sep = '\t')
+            
         } else if (file_ext(input$scoresFile$datapath) == "csv") {
-            data <- as.matrix(
-                read.table(file = input$scoresFile$datapath, header = TRUE, sep = ',', row.names = 'Gene'))
+            preTable <- read.table(file = input$scoresFile$datapath, header = TRUE, sep = ',')
         }
-        
+        row.names(preTable) <- preTable[,1]
+        preTable <- preTable[, 2: length(colnames(preTable))]
+        data <- as.matrix(preTable)
         data[is.na(data)] <- 1
         return(data)
     })
