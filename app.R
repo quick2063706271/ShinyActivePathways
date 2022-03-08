@@ -14,9 +14,11 @@ library(shinyWidgets)
 library(shinyscreenshot)
 library(shinyalert)
 library(tools)
+library(dplyr)
 
 # to-do: visEvent function
 source(file = "./enrichmentMap/enrichmentMap.R")
+source(file = "./color/color.R")
 options(shiny.maxRequestSize = 100*1024^2)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -49,6 +51,8 @@ ui <- fluidPage(
             ),
             actionButton(inputId = "runPanel", 
                          label = "Run ActivePathways!"),
+            actionButton(inputId = "runEx", 
+                         label = "Run Example"),
             downloadLink('downloadNetwork', 'Download network as .html'),
             # sliderInput(inputId = "size", "Label Size: ", min = 0, max = 30, value = 14),
             shinyscreenshot::screenshotButton(id = "visNet", filename = "downloadNetwork", label = "download"),
@@ -57,7 +61,19 @@ ui <- fluidPage(
                 label = "Font Size: ", 
                 seq(from = 0, to = 28),
                 selected = 14
-            )
+            ),
+            sliderInput(
+                inputId = "edgeCutoff",
+                label = "Edge cutoff (Similarity): ", 
+                min = 0.25,
+                max = 1.0,
+                value = 0.25
+            ),
+            numericInput("edgePrecise",
+                         label = "Value:",
+                         value = 0.25,
+                         min = 0.25,
+                         max = 1.0)
         ),
         
 
@@ -98,6 +114,11 @@ server <- function(input, output, session) {
                         "Geneset Filter:",
                         min = 0, max = 1000,
                         value = c(5, 1000)),
+            hr(),
+            selectInput(inputId = "metric",
+                        choices = c("jaccard", "overlap", "combined"),
+                        selected = "jaccard",
+                        label = "Overlap measures"),
             type = "input"
         ))
     })
@@ -168,6 +189,8 @@ server <- function(input, output, session) {
     
     
     
+    
+    fullResult <- reactiveValues(nodes = NULL, edges = NULL)
     observeEvent(input$shinyalert,{
         enrichmentResult$data <- ActivePathways(score = scores(), 
                                                 gmt = gmt(), 
@@ -179,22 +202,54 @@ server <- function(input, output, session) {
         
         g <- plotEnrichmentMap(gmt(), 
                                enrichmentResult$data,
-                               algorithm = "jaccard", 
+                               algorithm = input$metric, 
                                similarityCutoff = 0.25, 
                                pvalueCutoff = NULL, 
                                k = 0.5)
         visigraph <- visNetwork::visIgraph(g)
         nodes <- visigraph$x$nodes
+        nodes$color <- getColors(enrichmentResult$data)
         edges <- visigraph$x$edges
+        edges$id <- paste0("e", seq_along(edges$from))
+        fullResult$nodes <- nodes
+        fullResult$edges <- edges
         enrichNetwork$data <- visNetwork(nodes, edges) %>% 
             visIgraphLayout() %>%
             visExport(type = "png", name = "export-network", 
                       float = "left", label = "Save network", style= "") 
     })
+    observe({
+        updateSliderInput(
+            session = session,
+            inputId = "edgeCutoff",
+            value = input$edgePrecise
+        )
+    })
+    
+    
+    observe({
+        updateSliderInput(
+            session = session,
+            inputId = "edgePrecise",
+            value = input$edgeCutoff
+        )
+    })
     
     observeEvent(input$download, {
         shinyscreenshot::screenshot(download = TRUE)
         print(input$shinyscreenshot)
+    })
+    observe({
+        
+        filteredResult <- fullResult$edges[fullResult$edges$weight < input$edgeCutoff, ]
+        print(filteredResult)
+        filteredEdges <- filteredResult$id
+        hiddenEdges <- fullResult$edges[! fullResult$edges$id %in% filteredEdges,]
+        if (!is.null(filteredResult) & !is.null(filteredEdges)) {
+            visRemoveEdges(visNetworkProxy("visNet"), id = filteredEdges)
+            visUpdateEdges(visNetworkProxy("visNet"), edges = hiddenEdges) # stop at Feb 6 2022
+        }
+        
     })
 }
 

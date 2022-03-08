@@ -69,6 +69,7 @@ plotSimiScoreMatrix <- function(simiScoreMatrix, similarityCutoff, pvalueCutoff,
   
   # remove self-loop
   simiScoreMatrix[simiScoreMatrix == 1] = 0
+  print(simiScoreMatrix)
   
   # make colnames, rownames to pathway name instead of id
   colnames(simiScoreMatrix) <- pathwayNames
