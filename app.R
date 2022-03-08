@@ -211,6 +211,7 @@ server <- function(input, output, session) {
         nodes$color <- getColors(enrichmentResult$data)
         edges <- visigraph$x$edges
         edges$id <- paste0("e", seq_along(edges$from))
+        edges$color <- rgb(137,207,240, max = 255)
         fullResult$nodes <- nodes
         fullResult$edges <- edges
         enrichNetwork$data <- visNetwork(nodes, edges) %>% 
