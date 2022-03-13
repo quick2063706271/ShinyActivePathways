@@ -1,3 +1,5 @@
+library(grDevices)
+
 MAX_PHENOTYPE_1 = rgb(178, 24, 43, max = 255)
 LIGHTER_PHENOTYPE_1 = rgb(214, 96, 77, max = 255)
 LIGHTEST_PHENOTYPE_1 = rgb(244, 165, 130, max = 255)
@@ -10,8 +12,8 @@ LIGHTEST_PHENOTYPE_2 = rgb(146, 197, 222, max = 255)
 
 colors = c(OVER_COLOR, OVER_COLOR, LIGHTEST_PHENOTYPE_1, LIGHTER_PHENOTYPE_1, MAX_PHENOTYPE_1)
 colorRanges <- c(0.0, 0.9, 0.95, 0.995, 1.0)
-colorsPoints <- 1 - enrich$adjusted.p.val
-enrich$colorsPoints <- 1 - enrich$adjusted.p.val
+# colorsPoints <- 1 - enrich$adjusted.p.val
+# enrich$colorsPoints <- 1 - enrich$adjusted.p.val
 
 findColorRange <- function(colorPoint) {
   colorRanges <- c(0.0, 0.9, 0.95, 0.995, 1.0)
@@ -59,8 +61,8 @@ getColors <- function(enrich) {
 #   enrichColors <- c(enrichColors, cc)
 # }
 
-visg$x$nodes$color <- enrichColors
-visg
+# visg$x$nodes$color <- enrichColors
+# visg
 
 # calculateColor <- function(colorRange, colorPoint) {
 #   ranges <- colorRanges[colorRange: colorRange + 1]
@@ -73,5 +75,5 @@ visg
 
 
 
-getRangeValue(0.6602298, OVER_COLOR, LIGHTEST_PHENOTYPE_1)
+# getRangeValue(0.6602298, OVER_COLOR, LIGHTEST_PHENOTYPE_1)
 
