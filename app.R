@@ -29,52 +29,61 @@ ui <- fluidPage(
     useShinyalert(),
     sidebarLayout(
         sidebarPanel(
-            tags$p(
-                "ShinyActivePathways can run ActivePathways method for 
-                enrichment analysis and visualize result as enrichment map"
+            tabsetPanel(
+                        tabPanel("Input Files", wellPanel(
+                            tags$p(
+                                "ShinyActivePathways can run ActivePathways method for 
+                                enrichment analysis and visualize result as enrichment map"
+                            ),
+                            tags$p(
+                                "Upload scoresFile and gmtFile, then click 'Run ActivePathways!'"
+                            ),
+                            fileInput(inputId = "scoresFile", 
+                                      label = "Score file",
+                                      accept = c(
+                                          ".tsv",
+                                          ".csv"
+                                      )
+                            ),
+                            fileInput(inputId = "gmtFile", 
+                                      label = "GMT file",
+                                      accept = c(
+                                          ".gmt"
+                                      )
+                            ),
+                            actionButton(inputId = "runPanel", 
+                                         label = "Run ActivePathways!"),
+                            actionButton(inputId = "runEx", 
+                                         label = "Run Example"),
+                            downloadLink('downloadNetwork', 'Download network as .html'),
+                            # sliderInput(inputId = "size", "Label Size: ", min = 0, max = 30, value = 14),
+                            
+                            )),
+                        tabPanel("Adjust", wellPanel(
+                            shinyWidgets::sliderTextInput(
+                                inputId = "size",
+                                label = "Font Size: ", 
+                                seq(from = 0, to = 28),
+                                selected = 14
+                            ),
+                            sliderInput(
+                                inputId = "edgeCutoff",
+                                label = "Edge cutoff (Similarity): ", 
+                                min = 0.25,
+                                max = 1.0,
+                                value = 0.25
+                            ),
+                            numericInput("edgePrecise",
+                                         label = "Value:",
+                                         value = 0.25,
+                                         min = 0.25,
+                                         max = 1.0),
+                            checkboxInput("highlightNeighbors",
+                                          label = "highlight neighbors")
+                        )
+                        )
+                        )
             ),
-            tags$p(
-                "Upload scoresFile and gmtFile, then click 'Run ActivePathways!'"
-            ),
-            fileInput(inputId = "scoresFile", 
-                      label = "Score file",
-                      accept = c(
-                          ".tsv",
-                          ".csv"
-                      )
-            ),
-            fileInput(inputId = "gmtFile", 
-                      label = "GMT file",
-                      accept = c(
-                          ".gmt"
-                      )
-            ),
-            actionButton(inputId = "runPanel", 
-                         label = "Run ActivePathways!"),
-            actionButton(inputId = "runEx", 
-                         label = "Run Example"),
-            downloadLink('downloadNetwork', 'Download network as .html'),
-            # sliderInput(inputId = "size", "Label Size: ", min = 0, max = 30, value = 14),
-            shinyscreenshot::screenshotButton(id = "visNet", filename = "downloadNetwork", label = "download"),
-            shinyWidgets::sliderTextInput(
-                inputId = "size",
-                label = "Font Size: ", 
-                seq(from = 0, to = 28),
-                selected = 14
-            ),
-            sliderInput(
-                inputId = "edgeCutoff",
-                label = "Edge cutoff (Similarity): ", 
-                min = 0.25,
-                max = 1.0,
-                value = 0.25
-            ),
-            numericInput("edgePrecise",
-                         label = "Value:",
-                         value = 0.25,
-                         min = 0.25,
-                         max = 1.0)
-        ),
         
 
         # Show a plot
@@ -175,7 +184,8 @@ server <- function(input, output, session) {
     # Modify network properties
     observe({
         visNetworkProxy("visNet") %>% 
-            visNodes(font = list(size = input$size)) # for change font size of network
+            visNodes(font = list(size = input$size)) %>% # for change font size of network
+            visOptions(highlightNearest = input$highlightNeighbors) # for highlight neighbors
         #  Download network as html files
         output$downloadNetwork <- downloadHandler(
             filename = function() {
@@ -219,6 +229,9 @@ server <- function(input, output, session) {
             visExport(type = "png", name = "export-network", 
                       float = "left", label = "Save network", style= "") 
     })
+    
+    
+
     observe({
         updateSliderInput(
             session = session,
@@ -236,10 +249,6 @@ server <- function(input, output, session) {
         )
     })
     
-    observeEvent(input$download, {
-        shinyscreenshot::screenshot(download = TRUE)
-        print(input$shinyscreenshot)
-    })
     observe({
         
         filteredResult <- fullResult$edges[fullResult$edges$weight < input$edgeCutoff, ]
