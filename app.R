@@ -22,82 +22,95 @@ source(file = "./color/color.R")
 options(shiny.maxRequestSize = 100*1024^2)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-    
+    navbarPage(title = "ShinyActivePathways",
+               collapsible = TRUE,
+               tabPanel("Visualization",
     # Application title
-    titlePanel("Shiny ActivePathways"),
-    helpText("Upload score file and gmt file to analyze enrichment"),
-    useShinyalert(),
-    sidebarLayout(
-        sidebarPanel(
-            tabsetPanel(
-                        tabPanel("Input Files", wellPanel(
-                            tags$p(
-                                "ShinyActivePathways can run ActivePathways method for 
-                                enrichment analysis and visualize result as enrichment map"
+    # titlePanel("Shiny ActivePathways"),
+    # helpText("Upload score file and gmt file to analyze enrichment"),
+    # useShinyalert(),
+    
+                    sidebarLayout(
+                        sidebarPanel(
+                            tabsetPanel(
+                                        tabPanel("Input Files", wellPanel(
+                                            tags$p(
+                                                "ShinyActivePathways can run ActivePathways method for 
+                                                enrichment analysis and visualize result as enrichment map"
+                                            ),
+                                            tags$p(
+                                                "Upload scoresFile and gmtFile, then click 'Run ActivePathways!'"
+                                            ),
+                                            fileInput(inputId = "scoresFile", 
+                                                      label = "Score file",
+                                                      accept = c(
+                                                          ".tsv",
+                                                          ".csv"
+                                                      )
+                                            ),
+                                            fileInput(inputId = "gmtFile", 
+                                                      label = "GMT file",
+                                                      accept = c(
+                                                          ".gmt"
+                                                      )
+                                            ),
+                                            actionButton(inputId = "runPanel", 
+                                                         label = "Run ActivePathways!"),
+                                            actionButton(inputId = "runEx", 
+                                                         label = "Run Example"),
+                                            
+                                            # sliderInput(inputId = "size", "Label Size: ", min = 0, max = 30, value = 14),
+                                            
+                                            )),
+                                        tabPanel("Adjust", wellPanel(
+                                            shinyWidgets::sliderTextInput(
+                                                inputId = "size",
+                                                label = "Font Size: ", 
+                                                seq(from = 0, to = 28),
+                                                selected = 14
+                                            ),
+                                            sliderInput(
+                                                inputId = "edgeCutoff",
+                                                label = "Edge cutoff (Similarity): ", 
+                                                min = 0.25,
+                                                max = 1.0,
+                                                value = 0.25
+                                            ),
+                                            numericInput("edgePrecise",
+                                                         label = "Value:",
+                                                         value = 0.25,
+                                                         min = 0.25,
+                                                         max = 1.0),
+                                            checkboxInput("highlightNeighbors",
+                                                          label = "highlight neighbors"),
+                                            checkboxInput("navigationButtons",
+                                                          label = "hide navigation buttons")
+                                            )
+                                        ),
+                                        tabPanel("Download", wellPanel(
+                                            downloadLink('downloadNetwork', 'Download network as .html'),
+                                            )
+                                        )
+                                    
+                                )
                             ),
-                            tags$p(
-                                "Upload scoresFile and gmtFile, then click 'Run ActivePathways!'"
-                            ),
-                            fileInput(inputId = "scoresFile", 
-                                      label = "Score file",
-                                      accept = c(
-                                          ".tsv",
-                                          ".csv"
-                                      )
-                            ),
-                            fileInput(inputId = "gmtFile", 
-                                      label = "GMT file",
-                                      accept = c(
-                                          ".gmt"
-                                      )
-                            ),
-                            actionButton(inputId = "runPanel", 
-                                         label = "Run ActivePathways!"),
-                            actionButton(inputId = "runEx", 
-                                         label = "Run Example"),
-                            downloadLink('downloadNetwork', 'Download network as .html'),
-                            # sliderInput(inputId = "size", "Label Size: ", min = 0, max = 30, value = 14),
-                            
-                            )),
-                        tabPanel("Adjust", wellPanel(
-                            shinyWidgets::sliderTextInput(
-                                inputId = "size",
-                                label = "Font Size: ", 
-                                seq(from = 0, to = 28),
-                                selected = 14
-                            ),
-                            sliderInput(
-                                inputId = "edgeCutoff",
-                                label = "Edge cutoff (Similarity): ", 
-                                min = 0.25,
-                                max = 1.0,
-                                value = 0.25
-                            ),
-                            numericInput("edgePrecise",
-                                         label = "Value:",
-                                         value = 0.25,
-                                         min = 0.25,
-                                         max = 1.0),
-                            checkboxInput("highlightNeighbors",
-                                          label = "highlight neighbors")
-                        )
-                        )
-                        )
-            ),
-        
-
-        # Show a plot
-        mainPanel(
-            mainPanel(
-                visNetworkOutput(outputId = "visNet", 
-                                 width = "130%", 
-                                 height = "700px"),
-                hr(),
-                verbatimTextOutput('geneList')
+                        
                 
-               
-            )
-        )
+                        # Show a plot
+                        mainPanel(
+                            mainPanel(
+                                visNetworkOutput(outputId = "visNet", 
+                                                 width = "130%", 
+                                                 height = "700px"),
+                                hr(),
+                                verbatimTextOutput('geneList')
+                                
+                               
+                            )
+                        )
+                    )
+                ),
+                tabPanel("Tutorial",)
     )
 )
 
@@ -182,10 +195,15 @@ server <- function(input, output, session) {
         }})
     
     # Modify network properties
+    # observe({
+    #     enric
+    # })
     observe({
         visNetworkProxy("visNet") %>% 
             visNodes(font = list(size = input$size)) %>% # for change font size of network
-            visOptions(highlightNearest = input$highlightNeighbors) # for highlight neighbors
+            visOptions(highlightNearest = input$highlightNeighbors) %>% # for highlight neighbors
+            visInteraction(navigationButtons = !input$navigationButtons)
+            
         #  Download network as html files
         output$downloadNetwork <- downloadHandler(
             filename = function() {
