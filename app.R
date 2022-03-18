@@ -110,7 +110,7 @@ ui <- fluidPage(
                         )
                     )
                 ),
-                tabPanel("Tutorial",)
+                tabPanel("Documentation",)
     )
 )
 
