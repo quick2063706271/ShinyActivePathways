@@ -60,6 +60,8 @@ computeSCMatrix <- function(algorithm, gmt, ids, k) {
                                                                       k = k)
     }
   }
+  print("simiScoreMatrix1")
+  print(simiScoreMatrix)
   return(simiScoreMatrix)
 }
 
@@ -68,13 +70,18 @@ plotSimiScoreMatrix <- function(simiScoreMatrix, similarityCutoff, pvalueCutoff,
   simiScoreMatrix[simiScoreMatrix < similarityCutoff] = 0
   
   # remove self-loop
-  simiScoreMatrix[simiScoreMatrix == 1] = 0
+  for (i in seq_along(rownames(scMatrix))) {
+    if (scMatrix[i, i] == 1) {
+      simiScoreMatrix[i, i] = 0
+    }
+  }
+  # simiScoreMatrix[simiScoreMatrix == 1] = 0
+  print("simiScoreMatrix2")
   print(simiScoreMatrix)
   
   # make colnames, rownames to pathway name instead of id
   colnames(simiScoreMatrix) <- pathwayNames
   rownames(simiScoreMatrix) <- pathwayNames
-  
   # Create igraph object
   mode(simiScoreMatrix) <- "numeric"
   g2 <- igraph::graph.adjacency(simiScoreMatrix, mode = "undirected", weighted = TRUE)
