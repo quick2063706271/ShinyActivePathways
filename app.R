@@ -149,13 +149,11 @@ server <- function(input, output, session) {
         print(input$scoresFile)
         preTable <- NULL
         if (file_ext(input$scoresFile$datapath) == "tsv") {
-            preTable <- read.table(file = input$scoresFile$datapath, header = TRUE, sep = '\t')
+            preTable <- read.table(file = input$scoresFile$datapath, header = TRUE, sep = '\t', row.names = 1)
             
         } else if (file_ext(input$scoresFile$datapath) == "csv") {
-            preTable <- read.table(file = input$scoresFile$datapath, header = TRUE, sep = ',')
+            preTable <- read.table(file = input$scoresFile$datapath, header = TRUE, sep = ',', row.names = 1)
         }
-        row.names(preTable) <- preTable[,1]
-        preTable <- preTable[, 2: length(colnames(preTable))]
         data <- as.matrix(preTable)
         data[is.na(data)] <- 1
         return(data)
