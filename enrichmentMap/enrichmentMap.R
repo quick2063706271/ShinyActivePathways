@@ -61,23 +61,22 @@ computeSCMatrix <- function(algorithm, gmt, ids, k) {
     }
   }
   print("simiScoreMatrix1")
-  print(simiScoreMatrix)
+  # print(simiScoreMatrix)
   return(simiScoreMatrix)
 }
 
 plotSimiScoreMatrix <- function(simiScoreMatrix, similarityCutoff, pvalueCutoff, lens, pathwayNames, pathways) {
   # remove similaity Score less than the cutoff
   simiScoreMatrix[simiScoreMatrix < similarityCutoff] = 0
-  
   # remove self-loop
-  for (i in seq_along(rownames(scMatrix))) {
-    if (scMatrix[i, i] == 1) {
-      simiScoreMatrix[i, i] = 0
-    }
+  for (i in seq_along(rownames(simiScoreMatrix))) {
+    print(simiScoreMatrix[i, i])
+    print(rownames(simiScoreMatrix)[i])
+    simiScoreMatrix[i, i] = 0
   }
   # simiScoreMatrix[simiScoreMatrix == 1] = 0
   print("simiScoreMatrix2")
-  print(simiScoreMatrix)
+  # print(simiScoreMatrix)
   
   # make colnames, rownames to pathway name instead of id
   colnames(simiScoreMatrix) <- pathwayNames

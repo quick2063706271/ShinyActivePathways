@@ -15,6 +15,7 @@ library(shinyscreenshot)
 library(shinyalert)
 library(tools)
 library(dplyr)
+library(spsComps)
 
 # to-do: visEvent function
 source(file = "./enrichmentMap/enrichmentMap.R")
@@ -55,9 +56,11 @@ ui <- fluidPage(
                                                       )
                                             ),
                                             actionButton(inputId = "runPanel", 
-                                                         label = "Run ActivePathways!"),
+                                                         label = "Run ActivePathways!") %>% 
+                                                bsTooltip("Run ActivePathways with Parameters", "bottom", bgcolor = "#0275d8"),
                                             actionButton(inputId = "runEx", 
-                                                         label = "Run Example"),
+                                                         label = "Run Example") %>% 
+                                                bsTooltip("Run ActivePathways with an Example", "bottom", bgcolor = "#0275d8"),
                                             
                                             # sliderInput(inputId = "size", "Label Size: ", min = 0, max = 30, value = 14),
                                             
@@ -110,7 +113,13 @@ ui <- fluidPage(
                         )
                     )
                 ),
-                tabPanel("Documentation",)
+                tabPanel("Documentation",
+                         wellPanel(
+                             h1("Documentation"),
+                             h2("Functions"),
+                             h2("About ActivePathways"),
+                             h2("About EnrichmentMap"),
+                         ))
     )
 )
 
@@ -163,8 +172,14 @@ server <- function(input, output, session) {
     gmt <- reactive({
         return(read.GMT(input$gmtFile$datapath))
     })
+    
+    
+    
     enrichmentResult <- reactiveValues(data = NULL)
     enrichNetwork <- reactiveValues(data = NULL)
+    
+    
+    
     
     # Render visNetwork
     output$visNet <- renderVisNetwork({
@@ -176,12 +191,12 @@ server <- function(input, output, session) {
             ;}") # for display genes contained in each gene set
         }
     })
-    
+    gmtDataRAW <- reactiveValues(value = NULL)
     # For display genes contained in each gene set
     selectedPathwayId <- reactiveValues(data = NULL)
     observeEvent(input$current_node_id, {
         print(paste("The selected node ID is:", input$current_node_id))
-        gmtData <- getDataFromGMT(gmt())
+        gmtData <- getDataFromGMT(gmtDataRAW$value)
         selectedPathwayId$data <- gmtData$ids[gmtData$pathwayNames == input$current_node_id]
         print(paste("The pathway ID is:", selectedPathwayId$data))
     })
@@ -189,7 +204,7 @@ server <- function(input, output, session) {
     # Render information of gene list in text
     output$geneList <- renderPrint({
         if (! is.null(selectedPathwayId$data)) {
-            gmt()[[selectedPathwayId$data]]
+            gmtDataRAW$value[[selectedPathwayId$data]]
         }})
     
     # Modify network properties
@@ -217,21 +232,31 @@ server <- function(input, output, session) {
     
     
     fullResult <- reactiveValues(nodes = NULL, edges = NULL)
-    observeEvent(input$shinyalert,{
-        enrichmentResult$data <- ActivePathways(score = scores(), 
-                                                gmt = gmt(), 
-                                                cutoff = as.numeric(input$cutoff), 
-                                                significant = as.numeric(input$significant), 
-                                                merge.method = input$mergeMethod, 
-                                                correction.method = input$correctionMethod,
-                                                geneset.filter = input$filterRange)
+    
+    observeEvent(input$shinyalert, {
+            if (input$shinyalert) {
+                gmtDataRAW$value <- gmt()
+                shinyCatch(
+                enrichmentResult$data <- ActivePathways(score = scores(), 
+                                                    gmt = gmt(), 
+                                                    cutoff = as.numeric(input$cutoff), 
+                                                    significant = as.numeric(input$significant), 
+                                                    merge.method = input$mergeMethod, 
+                                                    correction.method = input$correctionMethod,
+                                                    geneset.filter = input$filterRange)
+                , blocking_level = "error")
+            }
         
+        g <- NULL
+        shinyCatch(
         g <- plotEnrichmentMap(gmt(), 
-                               enrichmentResult$data,
-                               algorithm = input$metric, 
-                               similarityCutoff = 0.25, 
-                               pvalueCutoff = NULL, 
-                               k = 0.5)
+                                   enrichmentResult$data,
+                                   algorithm = input$metric, 
+                                   similarityCutoff = 0.25, 
+                                   pvalueCutoff = NULL, 
+                                   k = 0.5)
+        , blocking_level = "error")
+
         visigraph <- visNetwork::visIgraph(g)
         nodes <- visigraph$x$nodes
         nodes$color <- getColors(enrichmentResult$data)
@@ -244,6 +269,75 @@ server <- function(input, output, session) {
             visIgraphLayout() %>%
             visExport(type = "png", name = "export-network", 
                       float = "left", label = "Save network", style= "") 
+    })
+    
+    observeEvent(input$runEx, {
+
+        nodes <- data.frame(id = c("DAP12 signaling",
+                                   "Axon guidance",
+                                   "Signaling by EGFR",
+                                   "Cellular Senescence"))
+        nodes$size <-  c(21.90, 31.75, 22.30, 13.80)
+        nodes$color <- c("#FF0000", "#FFFFB3", "#FF6D00", "#FF2400")
+        nodes$label <- c("DAP12 signaling",
+                         "Axon guidance",
+                         "Signaling by EGFR",
+                         "Cellular Senescence")
+        nodes$x <- c(-0.86622341, -1.00000000, -0.71840501, 0.91650067)
+        nodes$y <- c(-0.5461513 -0.3337750 -0.4780640 -1.0000000)
+        edges <- data.frame(from = c("DAP12 signaling",
+                                     "DAP12 signaling",
+                                     "Axon guidance"
+        ))
+        edges$to <- c("Axon guidance",
+                      "Signaling by EGFR",
+                      "Signaling by EGFR"
+
+        )
+        edges$weight <- c(0.4111283, 0.8952880, 0.4039634)
+        edges$width <- c(0.8222566, 1.7905759, 0.8079268)
+
+        edges$id <- paste0("e", seq_along(edges$from))
+        edges$color <- rgb(137,207,240, max = 255)
+        fullResult$nodes <- nodes
+        fullResult$edges <- edges
+        enrichNetwork$data <- visNetwork(nodes, edges) %>%
+            visIgraphLayout() %>%
+            visExport(type = "png", name = "export-network",
+                      float = "left", label = "Save network", style= "")
+        gmtDataRAW$value <- list()
+        lstItem1 <- list()
+        lstItem1$id <- "REAC:2424491"
+        lstItem1$name <- "DAP12 signaling"
+        lstItem1$genes  <- c("IL17RD", "PSMC1", "PDGFRB", "PSMD14", "TNRC6C", 
+                             "CD80", "DUSP10", "(Not showing full list for example)")
+        lstItem2 <- list()
+        lstItem2$id <- "REAC:177929" 
+        lstItem2$name <- "Signaling by EGFR"
+        lstItem2$genes <- c("ADCY3", "HRAS", "PSMC4", "TLN1", "MLST8", "THEM4", 
+                            "LAMTOR2", "CALM3", "RASGRF1", "DUSP7", "PSMC2", 
+                            "(Not showing full list for example)")
+        
+        lstItem3 <- list()
+        lstItem3$id <- "REAC:422475"
+        lstItem3$name <- "Axon guidance"
+        lstItem3$genes <- c("SEMA3E", "PSME4", "FGF10", "TIAM1", "RGMA", "JAK1", 
+                            "CD72", "GRB7", "COL6A5", "PSMC2", "SRGAP2", "LAMTOR2",
+                            "(Not showing full list for example)")
+        
+        lstItem4 <- list()
+        lstItem4$id <- "REAC:2559583" 
+        lstItem4$name <- "Cellular Senescence"
+        lstItem4$genes <- c("E2F3", "MDM4", "MDM2", "HIST3H3", "CDC27", "CBX2", 
+                            "ACD", "CDK2", "CBX8", "KDM6B", "TNRC6B",
+                            "(Not showing full list for example)")
+        
+        gmtLst <- list()
+        gmtLst$"REAC:2424491" <- lstItem1
+        gmtLst$"REAC:177929" <- lstItem2
+        gmtLst$"REAC:422475" <- lstItem3
+        gmtLst$"REAC:2559583" <- lstItem4
+        gmtDataRAW$value <- gmtLst
     })
     
     
