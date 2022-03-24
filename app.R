@@ -23,6 +23,7 @@ source(file = "./color/color.R")
 options(shiny.maxRequestSize = 100*1024^2)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+    includeCSS("www/styles.css"),
     navbarPage(title = "ShinyActivePathways",
                collapsible = TRUE,
                tabPanel("Visualization",
@@ -87,8 +88,11 @@ ui <- fluidPage(
                                             checkboxInput("highlightNeighbors",
                                                           label = "highlight neighbors"),
                                             checkboxInput("navigationButtons",
-                                                          label = "hide navigation buttons")
-                                            )
+                                                          label = "hide navigation buttons"),
+                                            checkboxInput("manipulation",
+                                                          label = "enable manipulation")
+                                            ),
+                                            
                                         ),
                                         tabPanel("Download", wellPanel(
                                             downloadLink('downloadNetwork', 'Download network as .html'),
@@ -101,15 +105,17 @@ ui <- fluidPage(
                 
                         # Show a plot
                         mainPanel(
-                            mainPanel(
-                                visNetworkOutput(outputId = "visNet", 
-                                                 width = "130%", 
-                                                 height = "700px"),
+                            
+                                wellPanel(
+                                    visNetworkOutput(outputId = "visNet", 
+                                                     width = "100%", 
+                                                     height = "500px"),
+                                ),
                                 hr(),
                                 verbatimTextOutput('geneList')
                                 
                                
-                            )
+                            
                         )
                     )
                 ),
@@ -215,7 +221,8 @@ server <- function(input, output, session) {
         visNetworkProxy("visNet") %>% 
             visNodes(font = list(size = input$size)) %>% # for change font size of network
             visOptions(highlightNearest = input$highlightNeighbors) %>% # for highlight neighbors
-            visInteraction(navigationButtons = !input$navigationButtons)
+            visInteraction(navigationButtons = !input$navigationButtons) %>% 
+            visOptions(manipulation = input$manipulation)
             
         #  Download network as html files
         output$downloadNetwork <- downloadHandler(
@@ -234,8 +241,12 @@ server <- function(input, output, session) {
     fullResult <- reactiveValues(nodes = NULL, edges = NULL)
     
     observeEvent(input$shinyalert, {
+        
             if (input$shinyalert) {
-                gmtDataRAW$value <- gmt()
+                shinyCatch(
+                    gmtDataRAW$value <- gmt()
+                    , blocking_level = "error"
+                )
                 shinyCatch(
                 enrichmentResult$data <- ActivePathways(score = scores(), 
                                                     gmt = gmt(), 

@@ -1,0 +1,32 @@
+.navbar{ 
+  background-color: #8ecae6;
+  
+}
+
+.navbar-default .navbar-brand{
+  color: white;
+  
+}
+
+
+
+.navbar-nav li a:hover, .navbar-nav > .active > a {
+  color: #fff !important;
+  background-color:#8ecae6 !important;
+  background-image: #fff !important;
+}
+
+body {
+  background-color: #ecf0f5;
+}
+
+#sidebar, .tabbable {
+  background-color: #fff;
+}
+
+.well {
+  background-color: #fff;
+  padding: 10px;
+  border: 0px;
+  min-height: 500px;
+}
