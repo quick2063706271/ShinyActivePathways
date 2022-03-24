@@ -58,10 +58,10 @@ ui <- fluidPage(
                                             ),
                                             actionButton(inputId = "runPanel", 
                                                          label = "Run ActivePathways!") %>% 
-                                                bsTooltip("Run ActivePathways with Parameters", "bottom", bgcolor = "#0275d8"),
+                                                bsTooltip("Run ActivePathways with Parameters", "bottom", bgcolor = "#219ebc"),
                                             actionButton(inputId = "runEx", 
                                                          label = "Run Example") %>% 
-                                                bsTooltip("Run ActivePathways with an Example", "bottom", bgcolor = "#0275d8"),
+                                                bsTooltip("Run ActivePathways with an Example", "bottom", bgcolor = "#ffb703"),
                                             
                                             # sliderInput(inputId = "size", "Label Size: ", min = 0, max = 30, value = 14),
                                             
