@@ -31,6 +31,9 @@ body {
   min-height: 500px;
 }
 
+.nav-tabs {
+    border-bottom: 1px transparent;
+}
 
 .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover {
     color: #555;

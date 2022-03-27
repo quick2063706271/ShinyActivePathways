@@ -122,9 +122,25 @@ ui <- fluidPage(
                 tabPanel("Documentation",
                          wellPanel(
                              h1("Documentation"),
+                             hr(),
+                             h2("Procedures"),
+                             hr(),
+                             p("Step 1: Upload your gene list and Gene Matrix 
+                               Transposed file (.gmt) file in the Input Files 
+                               panel."),
+                             p("Step 2: Click “Run ActivePathways” button and 
+                               then specify parameters (Cutoff, Significant, 
+                               Merge Method, Correction Method, Geneset Filter, 
+                               Overlap measures) in the pop-up dialogue. Click 
+                               OK to proceed."),
+                             p("Step 3: A enrichment map visualization of result
+                               will be displayed on the right panel."),
                              h2("Functions"),
+                             hr(),
                              h2("About ActivePathways"),
+                             hr(),
                              h2("About EnrichmentMap"),
+                             hr(),
                          ))
     )
 )
