@@ -2,7 +2,24 @@ library(igraph)
 library(ActivePathways)
 library(data.table)
 
-# VisEvents
+# getDataFromGMT
+#' Create a list containing id, name and length of the genset from gmt file
+#'
+#' A function that creates a list containing id, name and length of the genset 
+#' from gmt file
+#'
+#' @param gmt A list object reading from gmt file
+#' tree
+#'
+#' @return Returns a list object 
+#'
+#' @examples
+#' # Example 1
+#' library(ActivePathways)
+#' gmt.file <- system.file('extdata', 'hsapiens_REAC_subset.gmt', package = 'ActivePathways')
+#' getDataFromGMT(gmt.file)
+#'
+#' @export
 
 getDataFromGMT <- function(gmt) {
   lens <- numeric(length = length(names(gmt)))
@@ -20,6 +37,34 @@ getDataFromGMT <- function(gmt) {
               lengths = lens))
 }
 
+
+# computeSimilarityCoefficient
+#' Compute the similarity coefficient from two sets
+#'
+#' A function that computes the similarity coefficient from two sets providing 
+#' algorithm
+#'
+#' @param metric A string representing metric for computing similarity coefficient
+#' @param intersectionSet The intersection of genes1 and genes2
+#' @param unionSet The union of genes1 and genes2
+#' @param genes1 One of the sets
+#' @param genes2 The other one of the sets
+#' @param k When metric is neither jaccard nor overlap, using combined method with
+#' coefficient k
+#'
+#' @return Returns a similarity score
+#'
+#' @examples
+#' # Example 1
+#' set1 <- c("a", "b", "c")
+#' set2 <- c("a", "b", "d")
+#' computeSimilarityCoefficient("jaccard", intersect(set1, set2), 
+#'  union(set1, set2), 
+#'  set1, 
+#'  set2)
+#'
+#' @export
+
 computeSimilarityCoefficient <- function(metric, intersectionSet, unionSet, genes1, genes2, k) {
   if (metric == "jaccard") {
     return(length(intersectionSet) / length(unionSet))
@@ -33,6 +78,37 @@ computeSimilarityCoefficient <- function(metric, intersectionSet, unionSet, gene
   }
 }
 
+# computeSCMatrix
+#' Compute the similarity coefficient between ids
+#'
+#' A function that computes the similarity coefficient between each geneset 
+#' selected from ids
+#'
+#' @param algorithm A string representing metric for computing similarity coefficient
+#' @param gmt The list represents gmt 
+#' @param ids The ids of genesets for which you want to compute similarity coefficient
+#' @param k When metric is neither jaccard nor overlap, using combined method with
+#' coefficient k
+#'
+#' @return Returns a matrix of similarity score
+#'
+#' @examples
+#' # Example 1
+#' library(ActivePathways)
+#' gmt.file <- system.file('extdata', 'hsapiens_REAC_subset.gmt', package = 'ActivePathways')
+#' gmt <- read.GMT(gmt.file)
+#' enrich <- ActivePathways(scores, gmt.file,cutoff = 0.1, significant = 0.05, merge.method = "Brown")
+#' pathways <- enrich[, c("term.id", "term.name", "adjusted.p.val")]
+#' matchesColumns <- match(names(gmt), pathways$term.id) > 0
+#' matchesColumns[is.na(matchesColumns)] = FALSE 
+#' gmt <- gmt[matchesColumns]
+#' gmtData <- getDataFromGMT(gmt)
+#' scMatrix <- computeSCMatrix(algorithm = "jaccard", 
+#'                             gmt = gmt, 
+#'                             ids = gmtData$ids, 
+#'                             k = 0.5)
+#'
+#' @export
 
 computeSCMatrix <- function(algorithm, gmt, ids, k) {
   simiScoreMatrix <- matrix(ncol = length(ids), 
@@ -65,6 +141,41 @@ computeSCMatrix <- function(algorithm, gmt, ids, k) {
   return(simiScoreMatrix)
 }
 
+# plotSimiScoreMatrix
+#' Plot the SimiScoreMatrix as an enrichmentmap igraph object
+#'
+#' A function that plots the SimiScoreMatrix as an enrichmentmap igraph object
+#'
+#' @param simiScoreMatrix A matrix containing similarity coefficient
+#' @param similarityCutoff A numeric value. If a similarity coefficient between 2 genesets is
+#'  less than this value, this similarity is ignored (set to 0)
+#' @param pvalueCutoff A numeric value. If a pvalue of a geneset is
+#'  less than this value, this geneset is removed
+#' @param lens An integer vector representing the sizes of genesets
+#' @param pathwayNames A character vector representing the names of genesets
+#' @param pathways A data.frame that holds information about genesets from
+#' ActivePathways result
+#'
+#' @return Plot a matrix of similarity score
+#'
+#' @examples
+#' # Example 1
+#' library(ActivePathways)
+#' gmt.file <- system.file('extdata', 'hsapiens_REAC_subset.gmt', package = 'ActivePathways')
+#' gmt <- read.GMT(gmt.file)
+#' enrich <- ActivePathways(scores, gmt.file,cutoff = 0.1, significant = 0.05, merge.method = "Brown")
+#' pathways <- enrich[, c("term.id", "term.name", "adjusted.p.val")]
+#' matchesColumns <- match(names(gmt), pathways$term.id) > 0
+#' matchesColumns[is.na(matchesColumns)] = FALSE 
+#' gmt <- gmt[matchesColumns]
+#' gmtData <- getDataFromGMT(gmt)
+#' scMatrix <- computeSCMatrix(algorithm = "jaccard", 
+#'                             gmt = gmt, 
+#'                             ids = gmtData$ids, 
+#'                             k = 0.5)
+#' plotSimiScoreMatrix(scMatrix, 1, 0.05, gmtData$lengths, gmtData$pathwayNames, pathways)
+#'
+#' @export
 plotSimiScoreMatrix <- function(simiScoreMatrix, similarityCutoff, pvalueCutoff, lens, pathwayNames, pathways) {
   # remove similaity Score less than the cutoff
   simiScoreMatrix[simiScoreMatrix < similarityCutoff] = 0
@@ -86,7 +197,7 @@ plotSimiScoreMatrix <- function(simiScoreMatrix, similarityCutoff, pvalueCutoff,
   g2 <- igraph::graph.adjacency(simiScoreMatrix, mode = "undirected", weighted = TRUE)
   
   # set vertex size as the size of gene sets
-  V(g2)$size <- lens * 0.05 + 4
+  V(g2)$size <- lens * 0.04 + 4
   # set edge thickness (width) as the weight of edge (similarity score)
   E(g2)$width <- E(g2)$weight * 2
   
@@ -105,29 +216,42 @@ plotSimiScoreMatrix <- function(simiScoreMatrix, similarityCutoff, pvalueCutoff,
   return(g2)
 } 
 
-# Provide colors to enrichmentPlot
-# colorEnrichmentMap(enrichPlot, pathways, colorOption) {
-#   #
-# }
 
-# plot enrichment map from files generated by ActivePathways
-plotEnrichmentMapFromFile <- function(gmtFile, pathwaysFile, algorithm, similarityCutoff, pvalueCutoff, k) {
-  pathways <- data.table::fread(pathwaysFile)
-  gmt <- ActivePathways::read.GMT(gmtFile)
-  gmtData <- getDataFromGMT(gmt)
-  scMatrix <- computeSCMatrix(algorithm = algorithm, 
-                              gmt = gmt, 
-                              ids = gmtData$ids, 
-                              k = k)
-  enrichPlot <- plotSimiScoreMatrix(simiScoreMatrix = scMatrix, 
-                      similarityCutoff = similarityCutoff, 
-                      lens = gmtData$lengths, 
-                      pathwayNames = gmtData$pathwayNames,
-                      pathways = pathways)
-  return(enrichPlot)
-}
-
-# plot enrichment map from result of ActivePathways
+# plotEnrichmentMap
+#' Plot enrichment map from result of ActivePathways
+#'
+#' A function that plots enrichment map from result of ActivePathways
+#'
+#' @param gmt The list represents gmt 
+#' @param enrichment The output of ActivePathways
+#' @param algorithm A string representing metric for computing similarity coefficient
+#' @param similarityCutoff A numeric value. If a similarity coefficient between 2 genesets is
+#'  less than this value, this similarity is ignored (set to 0)
+#' @param pvalueCutoff A numeric value. If a pvalue of a geneset is
+#'  less than this value, this geneset is removed
+#' When metric is neither jaccard nor overlap, using combined method with
+#' coefficient k
+#'
+#' @return An igraph object that plots enrichment map from result of ActivePathways
+#'
+#' @examples
+#' scores <- read.table(
+#'   system.file('extdata', 'Adenocarcinoma_scores_subset.tsv', package = 'ActivePathways'),
+#'  header = TRUE, sep = '\t', row.names = 'Gene')
+#' scores <- as.matrix(scores)
+#' scores[is.na(scores)] <- 1
+#' gmt.file <- system.file('extdata', 'hsapiens_REAC_subset.gmt', package = 'ActivePathways')
+#' enrich <- ActivePathways(scores, gmt.file)
+#' gmt <- read.GMT(gmt.file)
+#' g <- plotEnrichmentMap(gmt = gmt, 
+#'                   enrichment = enrich, 
+#'                   algorithm = "jaccard", 
+#'                   similarityCutoff = 0.25, 
+#'                   pvalueCutoff = NULL, 
+#'                   k = 0.5)
+#' plot(g, vertex.label.cex = 0.6)
+#' @export
+#' 
 plotEnrichmentMap <- function(gmt, enrichment, algorithm, similarityCutoff, pvalueCutoff, k) {
   pathways <- enrichment[, c("term.id", "term.name", "adjusted.p.val")]
   matchesColumns <- match(names(gmt), pathways$term.id) > 0
@@ -147,23 +271,3 @@ plotEnrichmentMap <- function(gmt, enrichment, algorithm, similarityCutoff, pval
   return(enrichPlot)
 }
 
-
-
-# scores <- read.table(
-#   system.file('extdata', 'Adenocarcinoma_scores_subset.tsv', package = 'ActivePathways'),
-#   header = TRUE, sep = '\t', row.names = 'Gene')
-# scores <- as.matrix(scores)
-# scores[is.na(scores)] <- 1
-# gmt.file <- system.file('extdata', 'hsapiens_REAC_subset.gmt', package = 'ActivePathways')
-# enrich <- ActivePathways(scores, gmt.file)
-# gmt <- read.GMT(gmt.file)
-# g <- plotEnrichmentMap(gmt = gmt, 
-#                   enrichment = enrich, 
-#                   algorithm = "jaccard", 
-#                   similarityCutoff = 0.25, 
-#                   pvalueCutoff = NULL, 
-#                   k = 0.5)
-# plot(g, vertex.label.cex = 0.6)
-# 
-# library(visNetwork)
-# visNetwork::visIgraph(g)

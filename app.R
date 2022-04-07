@@ -17,21 +17,16 @@ library(tools)
 library(dplyr)
 library(spsComps)
 
-# to-do: visEvent function
 source(file = "./enrichmentMap/enrichmentMap.R")
 source(file = "./color/color.R")
-options(shiny.maxRequestSize = 100*1024^2)
+options(shiny.maxRequestSize = 100*1024^2) # define maximum upload file size
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-    includeCSS("www/styles.css"),
+    includeCSS("www/styles.css"), # include css file
+    # naviation bar
     navbarPage(title = "ShinyActivePathways",
                collapsible = TRUE,
                tabPanel("Visualization",
-    # Application title
-    # titlePanel("Shiny ActivePathways"),
-    # helpText("Upload score file and gmt file to analyze enrichment"),
-    # useShinyalert(),
-    
                     sidebarLayout(
                         sidebarPanel(
                             tabsetPanel(
@@ -103,7 +98,7 @@ ui <- fluidPage(
                             ),
                         
                 
-                        # Show a plot
+                        # Main panel
                         mainPanel(
                             
                                 wellPanel(
@@ -169,7 +164,7 @@ server <- function(input, output, session) {
                         value = c(5, 1000)),
             hr(),
             selectInput(inputId = "metric",
-                        choices = c("jaccard", "overlap", "combined"),
+                        choices = c("jaccard", "overlap", "combined - 50% each"),
                         selected = "jaccard",
                         label = "Overlap measures"),
             type = "input"
@@ -207,7 +202,7 @@ server <- function(input, output, session) {
     output$visNet <- renderVisNetwork({
         if (! is.null(enrichNetwork$data)) {
             enrichNetwork$data %>%
-                visInteraction(navigationButtons = TRUE) %>%
+                visInteraction(navigationButtons = TRUE, multiselect = TRUE) %>%
                 visEvents(select = "function(nodes) {
             Shiny.onInputChange('current_node_id', nodes.nodes); 
             ;}") # for display genes contained in each gene set
