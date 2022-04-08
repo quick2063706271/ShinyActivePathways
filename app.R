@@ -129,8 +129,10 @@ server <- function(input, output, session) {
     # Parameters for ActivePathways
     observeEvent(input$runPanel, {
         shinyalert::shinyalert(html = TRUE, text = tagList(
-            textInput(inputId = "cutoff", value = 0.1, label = "Cutoff"),
-            textInput(inputId = "significant", value = 0.05, label = "Significant"),
+            div(style="display:inline-block",
+            textInput(inputId = "cutoff", value = 0.1, label = "Cutoff")),
+            div(style="display:inline-block",
+            textInput(inputId = "significant", value = 0.05, label = "Significant")),
             selectInput(inputId = "mergeMethod", choices = c("Brown", "Fisher"), selected = "Brown", label = "Merge Method"), 
             selectInput(inputId = "correctionMethod", choices = c("holm", 
                                                                   "fdr", 
@@ -141,10 +143,10 @@ server <- function(input, output, session) {
                                                                   "BY",
                                                                   "none"), 
                         selected = "holm",
-                        label = "correction method"), 
+                        label = "Correction Method"), 
             sliderInput(inputId = "filterRange", 
                         "Geneset Filter:",
-                        min = 0, max = 1000,
+                        min = 0, max = 1500,
                         value = c(5, 1000)),
             hr(),
             selectInput(inputId = "metric",
