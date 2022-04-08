@@ -1,21 +1,20 @@
 #
-# This is a Shiny web application. You can run the application by clicking
+# This is a ShinyActivePathways. 
+# A Shiny App runs ActivePathways and visualize data in enrichment map.
+# You can run the application by clicking
 # the 'Run App' button above.
 #
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+
 
 library(shiny)
 library(ActivePathways)
-library(visNetwork)
-library(shinyWidgets)
+library(visNetwork) # For interactive Network
+library(shinyWidgets) # For some fancy shiny component
 library(shinyscreenshot)
-library(shinyalert)
+library(shinyalert) # For dialogue
 library(tools)
 library(dplyr)
-library(spsComps)
+library(spsComps) # For error handling
 
 source(file = "./enrichmentMap/enrichmentMap.R")
 source(file = "./color/color.R")
@@ -27,6 +26,7 @@ ui <- fluidPage(
     navbarPage(title = "ShinyActivePathways",
                collapsible = TRUE,
                tabPanel("Visualization",
+                        # side bar
                     sidebarLayout(
                         sidebarPanel(
                             tabsetPanel(
@@ -142,7 +142,7 @@ ui <- fluidPage(
 
 # Define server logic
 server <- function(input, output, session) {
-    # Uploads score files
+    # Parameters for ActivePathways
     observeEvent(input$runPanel, {
         shinyalert::shinyalert(html = TRUE, text = tagList(
             textInput(inputId = "cutoff", value = 0.1, label = "Cutoff"),
@@ -170,7 +170,7 @@ server <- function(input, output, session) {
             type = "input"
         ))
     })
-    
+    # Uploads score files
     scores <- reactive({
         print(input$scoresFile)
         preTable <- NULL
@@ -191,12 +191,8 @@ server <- function(input, output, session) {
     })
     
     
-    
     enrichmentResult <- reactiveValues(data = NULL)
     enrichNetwork <- reactiveValues(data = NULL)
-    
-    
-    
     
     # Render visNetwork
     output$visNet <- renderVisNetwork({
@@ -225,9 +221,6 @@ server <- function(input, output, session) {
         }})
     
     # Modify network properties
-    # observe({
-    #     enric
-    # })
     observe({
         visNetworkProxy("visNet") %>% 
             visNodes(font = list(size = input$size)) %>% # for change font size of network
@@ -246,11 +239,8 @@ server <- function(input, output, session) {
         )
     })
     
-    
-    
-    
+    # Run ActivePathways
     fullResult <- reactiveValues(nodes = NULL, edges = NULL)
-    
     observeEvent(input$shinyalert, {
         
             if (input$shinyalert) {
@@ -293,6 +283,7 @@ server <- function(input, output, session) {
                       float = "left", label = "Save network", style= "") 
     })
     
+    # Hardcoded example 
     observeEvent(input$runEx, {
 
         nodes <- data.frame(id = c("DAP12 signaling",
@@ -362,8 +353,7 @@ server <- function(input, output, session) {
         gmtDataRAW$value <- gmtLst
     })
     
-    
-
+    # edge Cutoff logic
     observe({
         updateSliderInput(
             session = session,
@@ -382,14 +372,13 @@ server <- function(input, output, session) {
     })
     
     observe({
-        
         filteredResult <- fullResult$edges[fullResult$edges$weight < input$edgeCutoff, ]
         print(filteredResult)
         filteredEdges <- filteredResult$id
         hiddenEdges <- fullResult$edges[! fullResult$edges$id %in% filteredEdges,]
         if (!is.null(filteredResult) & !is.null(filteredEdges)) {
             visRemoveEdges(visNetworkProxy("visNet"), id = filteredEdges)
-            visUpdateEdges(visNetworkProxy("visNet"), edges = hiddenEdges) # stop at Feb 6 2022
+            visUpdateEdges(visNetworkProxy("visNet"), edges = hiddenEdges) 
         }
         
     })
