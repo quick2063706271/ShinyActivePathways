@@ -18,6 +18,7 @@ library(spsComps) # For error handling
 
 source(file = "./enrichmentMap/enrichmentMap.R")
 source(file = "./color/color.R")
+source(file = "./documentation/documentation.R")
 options(shiny.maxRequestSize = 100*1024^2) # define maximum upload file size
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -116,26 +117,9 @@ ui <- fluidPage(
                 ),
                 tabPanel("Documentation",
                          wellPanel(
-                             h1("Documentation"),
-                             hr(),
-                             h2("Procedures"),
-                             hr(),
-                             p("Step 1: Upload your gene list and Gene Matrix 
-                               Transposed file (.gmt) file in the Input Files 
-                               panel."),
-                             p("Step 2: Click “Run ActivePathways” button and 
-                               then specify parameters (Cutoff, Significant, 
-                               Merge Method, Correction Method, Geneset Filter, 
-                               Overlap measures) in the pop-up dialogue. Click 
-                               OK to proceed."),
-                             p("Step 3: A enrichment map visualization of result
-                               will be displayed on the right panel."),
-                             h2("Functions"),
-                             hr(),
-                             h2("About ActivePathways"),
-                             hr(),
-                             h2("About EnrichmentMap"),
-                             hr(),
+                             tags$div(
+                                 HTML(documentHTML)
+                             )
                          ))
     )
 )
